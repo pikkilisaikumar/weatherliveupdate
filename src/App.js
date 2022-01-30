@@ -7,15 +7,15 @@ import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css'
 import './App.css'
 
 const apiStatusChange = {
-  intial: 'INITIAL',
+  intial: 'INTIAL',
+  loading: 'LOADING',
   success: 'SUCCESS',
   failure: 'FAILURE',
-  loading: 'LOADING',
 }
 
 class App extends Component {
   state = {
-    search: 'Delhi',
+    search: '',
     uday: [],
     apiStatus: apiStatusChange.intial,
   }
@@ -29,23 +29,29 @@ class App extends Component {
   }
 
   press = event => {
+    const {search} = this.state
     if (event.key === 'Enter') {
-      const {search} = this.state
-      this.setState({search}, this.getDetails)
+      const getdata = localStorage.getItem('name')
+      if (getdata === null) {
+        localStorage.setItem('name', search)
+        this.setState({search}, this.getDetails)
+      } else {
+        localStorage.removeItem('name')
+        localStorage.setItem('name', search)
+        this.setState({search}, this.getDetails)
+      }
     }
   }
 
   getDetails = async () => {
-    const {search} = this.state
-
-    this.setState({
-      apiStatus: apiStatusChange.loading,
-    })
-
-    const url = `http://api.openweathermap.org/data/2.5/weather?q=${search}&appid=c3e89bc97eb6bd54a4b2b7ea34b98c35 `
+    this.setState({apiStatus: apiStatusChange.loading})
+    const namedata = localStorage.getItem('name')
+    const url = `http://api.openweathermap.org/data/2.5/weather?q=${namedata}&appid=c3e89bc97eb6bd54a4b2b7ea34b98c35`
     const response = await fetch(url)
+    console.log(response)
     if (response.ok === true) {
       const data = await response.json()
+      console.log(data)
       const ram = {
         temp: data.main.temp,
         minTemp: data.main.temp_min,
@@ -55,7 +61,11 @@ class App extends Component {
         pressure: data.main.pressure,
         name: data.name,
       }
-      this.setState({uday: ram, search: '', apiStatus: apiStatusChange.success})
+      this.setState({
+        uday: ram,
+        search: '',
+        apiStatus: apiStatusChange.success,
+      })
     } else if (response.status === 404) {
       this.setState({search: '', apiStatus: apiStatusChange.failure})
     }
@@ -63,28 +73,30 @@ class App extends Component {
 
   renderSuccess = () => {
     const {uday, search} = this.state
+    console.log(uday)
     const {temp, minTemp, maxTemp, weather, humidity, pressure, name} = uday
     return (
-      <div className="background1">
-        <input
-          type="text"
-          value={search}
-          className="input"
-          onChange={this.searchCity}
-          onKeyPress={this.press}
-          placeholder="Enter the city name"
-        />
-        <div className="uday">
-          <h1>{name}</h1>
-        </div>
-
-        <h1>{temp} F</h1>
-        <h2>{weather}</h2>
-        <p>Coldest Temperature: {minTemp} F </p>
-        <p>Warmest Temperature: {maxTemp} F </p>
-        <div className="uday">
-          <p>Humidity :{humidity} </p>
-          <p>Pressure :{pressure} </p>
+      <div className="background">
+        <div className="background1">
+          <input
+            type="text"
+            value={search}
+            className="input"
+            onChange={this.searchCity}
+            onKeyPress={this.press}
+            placeholder="Enter the city name"
+          />
+          <div className="uday">
+            <h1>{name}</h1>
+          </div>
+          <h1>{temp} F</h1>
+          <h2>{weather}</h2>
+          <p>Coldest Temperature: {minTemp} F </p>
+          <p>Warmest Temperature: {maxTemp} F </p>
+          <div className="uday">
+            <p>Humidity :{humidity} </p>
+            <p>Pressure :{pressure} </p>
+          </div>
         </div>
       </div>
     )
@@ -93,45 +105,43 @@ class App extends Component {
   renderFailure = () => {
     const {search} = this.state
     return (
-      <div className="background1">
-        <input
-          type="text"
-          value={search}
-          className="input"
-          onChange={this.searchCity}
-          onKeyPress={this.press}
-          placeholder="Enter the city name"
-        />
-        <h1>Country is not Found</h1>
+      <div className="background">
+        <div className="background1">
+          <input
+            type="text"
+            value={search}
+            className="input"
+            onChange={this.searchCity}
+            onKeyPress={this.press}
+            placeholder="Enter the city name"
+          />
+          <h1>Country is not Found</h1>
+        </div>
       </div>
     )
   }
 
   renderLoading = () => (
-    <div className="background1" data-testid="loader">
-      <Loader type="TailSpin" color="#00BFFF" height={50} width={50} />
+    <div className="background">
+      <div className="background1">
+        <Loader type="TailSpin" color="#00BFFF" height={50} width={50} />
+      </div>
     </div>
   )
 
   render() {
     const {apiStatus} = this.state
-    let data
-
+    console.log(apiStatus)
     switch (apiStatus) {
       case apiStatusChange.success:
-        data = this.renderSuccess()
-        break
+        return this.renderSuccess()
       case apiStatusChange.failure:
-        data = this.renderFailure()
-        break
+        return this.renderFailure()
       case apiStatusChange.loading:
-        data = this.renderLoading()
-        break
+        return this.renderLoading()
       default:
-        data = null
+        return null
     }
-
-    return <div className="background">{data}</div>
   }
 }
 
